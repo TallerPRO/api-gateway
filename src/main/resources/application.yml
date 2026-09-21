@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: ms-tallerpro-gateway
+
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          # Una ruta por microservicio de dominio. El frontend SOLO conoce este
+          # gateway; nunca llama a un microservicio por su puerto directo.
+          routes:
+            - id: jobs
+              uri: ${JOBS_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/ordenes/**
+
+            - id: catalog
+              uri: ${CATALOG_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/v1/talleres/**,/api/v1/servicios/**
+
+            - id: report
+              uri: ${REPORT_URL:http://localhost:8085}
+              predicates:
+                - Path=/api/report/**
+
+            - id: audit
+              uri: ${AUDIT_URL:http://localhost:8086}
+              predicates:
+                - Path=/api/audit/**
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Tokens v2 del tenant corporativo (accessTokenAcceptedVersion = 2 en el App Registration).
+          issuer-uri: https://login.microsoftonline.com/${AZURE_TENANT_ID:tenant-id}/v2.0
+          # Rechaza tokens validos emitidos para OTRA app del mismo tenant.
+          audiences: api://${AZURE_API_CLIENT_ID:api-client-id}
+
+server:
+  port: ${SERVER_PORT:8080}
+
+tallerpro:
+  gateway:
+    # false -> desarrollo local sin tenant de Azure: deja pasar todo (solo CORS).
+    # true  -> exige Bearer JWT valido (issuer + audience + firma + exp) en /api/**.
+    jwt-enabled: ${TALLERPRO_JWT_ENABLED:true}
+    # Origenes permitidos del frontend, separados por coma.
+    allowed-origins: ${FRONTEND_ORIGINS:http://localhost:4321}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
