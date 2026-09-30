@@ -1,0 +1,29 @@
+# API Gateway (Spring Cloud Gateway). Requiere la red tallerpro-net
+# (se crea con ../docker-compose.infra.yml); rutea por nombre de contenedor.
+#
+#   docker compose up -d --build
+name: tallerpro-gateway
+
+services:
+  api-gateway:
+    build: .
+    image: tallerpro/api-gateway:latest
+    container_name: api-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      JOBS_URL: http://ms-tallerpro-jobs:8081
+      CATALOG_URL: http://ms-tallerpro-catalog:8082
+      REPORT_URL: http://ms-tallerpro-report:8085
+      AUDIT_URL: http://ms-tallerpro-audit:8086
+      FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:-http://localhost:4321}
+      TALLERPRO_JWT_ENABLED: ${TALLERPRO_JWT_ENABLED:-false}
+      AZURE_TENANT_ID: ${AZURE_TENANT_ID:-tenant-id}
+      AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID:-api-client-id}
+    networks:
+      - tallerpro-net
+
+networks:
+  tallerpro-net:
+    external: true
