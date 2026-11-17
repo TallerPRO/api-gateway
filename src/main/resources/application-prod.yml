@@ -1,0 +1,31 @@
+# Perfil de PRODUCCION del API Gateway (SPRING_PROFILES_ACTIVE=prod).
+# Se superpone a application.yml. Reglas:
+#  - Sin valores por defecto para tenant, audience ni origenes CORS: si falta una
+#    variable, el arranque falla.
+#  - Las rutas se heredan de application.yml (no se duplican aqui para que no diverjan);
+#    JOBS_URL / CATALOG_URL / REPORT_URL / AUDIT_URL las fija docker-compose.prod.yml.
+#  - La validacion JWT queda fija en true (no depende de TALLERPRO_JWT_ENABLED).
+#  - Actuator reducido a /actuator/health sin detalles (sin el endpoint "gateway").
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://login.microsoftonline.com/${AZURE_TENANT_ID}/v2.0
+          audiences: ${AZURE_API_CLIENT_ID},api://${AZURE_API_CLIENT_ID}  # token v2: aud = client id pelado
+
+tallerpro:
+  gateway:
+    # Fijo: en produccion todo /api/** exige Bearer JWT valido del tenant.
+    jwt-enabled: true
+    # Origenes exactos del frontend (https://...), separados por coma. Sin comodines.
+    allowed-origins: ${FRONTEND_ORIGINS}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
